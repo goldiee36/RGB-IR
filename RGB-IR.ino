@@ -340,7 +340,7 @@ void loop() {
               
             case 0xFF6996:
               Serial.println(" prog1 - color wheel");
-              setColourRgb(colorWheelR,colorWheelG,colorWheelB,0, false, 1000);
+              setColourRgb(colorWheelR,colorWheelG,colorWheelB,50, false, 1000);
               autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
               colorWheel = true;
               break;
@@ -379,8 +379,8 @@ void loop() {
         break;
     }
     colorWheelWhichColorToDecrease = colorWheelNextColorToDecrease;
-    setColourRgbFastSimple(colorWheelR,colorWheelG,colorWheelB,0);
-    delay(5);
+    setColourRgbFastSimple(colorWheelR,colorWheelG,colorWheelB,50);
+    delay(50);
   }
   
   //AUTOMATED CODE BASED ON PIR SENSOR analogRead(0)
@@ -433,7 +433,6 @@ void setColourRgb(int redSet, int greenSet, int blueSet, int extraSet, boolean c
   greenCur = greenSet;
   blueCur = blueSet;
   extraCur = extraSet;
-  needDelay = needDelay >= tranSpeed ? needDelay - tranSpeed : 0;
   if (changeRef) {
     redRef = redSet;
     greenRef = greenSet;
@@ -456,4 +455,8 @@ void setColourRgbFastSimple(int redSet, int greenSet, int blueSet, int extraSet)
   analogWrite(greenPin, greenSet);
   analogWrite(bluePin, blueSet);
   analogWrite(extraPin, extraSet);
+  redCur = redSet;
+  greenCur = greenSet;
+  blueCur = blueSet;
+  extraCur = extraSet;
 }
