@@ -46,7 +46,7 @@ boolean validIR;
 byte repeat_counter;
 #define IRDELAY 150 //means ms - wait between IR detection readouts
 byte needDelay = IRDELAY; //if we do a color transition which contains delay we have to decrease this value
-unsigned long lastIRreadout_millis;
+unsigned long lastIRreadout_millis = 0;
 
 void setup()
 {
@@ -65,13 +65,12 @@ void loop() {
   if ((millis() - lastIRreadout_millis) > (unsigned long)needDelay) {//the IR detection needs time to evaulate the next button push. in case of long presses the oxFFFFFFFF repeat codes are coming around every 100ms each after an other
                                                                      //If we check the next IR detection too early we may miss the next repeat code
     needDelay = IRDELAY;
-    Serial.println("              IR readout");
-    Serial.println(millis());
+    lastIRreadout_millis = millis();
     if (irrecv.decode(&results)) {
       irrecv.resume();
       Serial.println(results.value, HEX);
       if (results.value==0xFFFFFFFF) {
-        Serial.println("                      majdnem   ismetles");
+        Serial.println("                      almost repeat");
         if (repeat_counter > 1 && lastIR != 0) {
           switch(lastIR) {
             case 0xFFC13E:
@@ -210,7 +209,6 @@ void loop() {
       }
     }
     else {
-      Serial.println("              IR not found");
       if (normalmode==true && lastIR != 0) {
         switch(lastIR) {
             case 0xFFC13E:
