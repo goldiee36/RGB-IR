@@ -33,7 +33,6 @@ float newBrightnessPercent;
 float extraNewBrightnessPercent;
 boolean autoCtrl = true; //automated light switch on and off (when dark enough, no manual control, and there is a movement)
 boolean autoOff = false; //automated light switch off needed - this state means that the light are on because of autoctrl switch on
-boolean colorWheel = false; //activate color wheel which power offs after 20 minutes
 int autoSwitchoffTimer = 120; //seconds
 unsigned long prevMillis;
 
@@ -47,6 +46,14 @@ byte repeat_counter;
 #define IRDELAY 150 //means ms - wait between IR detection readouts
 byte needDelay = IRDELAY; //if we do a color transition which contains delay we have to decrease this value
 unsigned long lastIRreadout_millis = 0;
+
+//color wheel stuff
+boolean colorWheel = false; //activate color wheel which power offs after 20 minutes
+byte colorWheelR = 128;
+byte colorWheelG = 127;
+byte colorWheelB = 0;
+byte colorWheelWhichColorToDecrease = 0; //0 red, 1 green, 2 blue
+byte colorWheelNextColorToDecrease = 0;
 
 void setup()
 {
@@ -326,9 +333,16 @@ void loop() {
               setColourRgb(EEPROM.read(31),EEPROM.read(32),EEPROM.read(33),EEPROM.read(34));
               break;
               
+            //case 0xFF6996:
+            //  Serial.println(" MEM9");
+            //  setColourRgb(EEPROM.read(35),EEPROM.read(36),EEPROM.read(37),EEPROM.read(38));
+            //  break;
+              
             case 0xFF6996:
-              Serial.println(" MEM9");
-              setColourRgb(EEPROM.read(35),EEPROM.read(36),EEPROM.read(37),EEPROM.read(38));
+              Serial.println(" prog1 - color wheel");
+              setColourRgb(colorWheelR,colorWheelG,colorWheelB,0, false, 1000);
+              autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
+              colorWheel = true;
               break;
           }
         //Serial.print(lastIR, HEX);
@@ -340,8 +354,33 @@ void loop() {
     }
   }
   
-  if (colorWheel == true) { //COLOR WHEEL state code
-    
+  if (colorWheel == true) { //COLOR WHEEL state code    
+    switch(colorWheelWhichColorToDecrease) {
+        case 0:
+          colorWheelR--;
+          colorWheelG++;
+          if (colorWheelR == 0) {
+            colorWheelNextColorToDecrease = 1;
+          }       
+        break;
+        case 1:
+          colorWheelG--;
+          colorWheelB++;
+          if (colorWheelG == 0) {
+            colorWheelNextColorToDecrease = 2;
+          } 
+        break;
+        case 2:
+          colorWheelB--;
+          colorWheelR++;
+          if (colorWheelB == 0) {
+            colorWheelNextColorToDecrease = 0;
+          } 
+        break;
+    }
+    colorWheelWhichColorToDecrease = colorWheelNextColorToDecrease;
+    setColourRgbFastSimple(colorWheelR,colorWheelG,colorWheelB,0);
+    delay(5);
   }
   
   //AUTOMATED CODE BASED ON PIR SENSOR analogRead(0)
@@ -394,12 +433,7 @@ void setColourRgb(int redSet, int greenSet, int blueSet, int extraSet, boolean c
   greenCur = greenSet;
   blueCur = blueSet;
   extraCur = extraSet;
-  if (needDelay >= tranSpeed) { //decrease the next IR readout time if we waited for a transition anyway
-    needDelay = needDelay - tranSpeed;
-  }
-  else {
-    needDelay = 0;
-  }
+  needDelay = needDelay >= tranSpeed ? needDelay - tranSpeed : 0;
   if (changeRef) {
     redRef = redSet;
     greenRef = greenSet;
@@ -414,4 +448,12 @@ void setColourRgb(int redSet, int greenSet, int blueSet, int extraSet, boolean c
     autoCtrl = false;
     autoOff = false;
   }
+  colorWheel = false;
 } 
+
+void setColourRgbFastSimple(int redSet, int greenSet, int blueSet, int extraSet) {
+  analogWrite(redPin, redSet);
+  analogWrite(greenPin, greenSet);
+  analogWrite(bluePin, blueSet);
+  analogWrite(extraPin, extraSet);
+}
