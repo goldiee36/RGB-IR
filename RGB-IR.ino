@@ -44,7 +44,7 @@ int lastIR;
 boolean normalmode; //for detecting the short/long presses
 boolean validIR;
 byte repeat_counter;
-#define IRDELAY = 150; //means ms - wait between IR detection readouts
+#define IRDELAY 150 //means ms - wait between IR detection readouts
 byte needDelay = IRDELAY; //if we do a color transition which contains delay we have to decrease this value
 unsigned long lastIRreadout_millis;
 
@@ -65,11 +65,13 @@ void loop() {
   if ((millis() - lastIRreadout_millis) > (unsigned long)needDelay) {//the IR detection needs time to evaulate the next button push. in case of long presses the oxFFFFFFFF repeat codes are coming around every 100ms each after an other
                                                                      //If we check the next IR detection too early we may miss the next repeat code
     needDelay = IRDELAY;
+    Serial.println("              IR readout");
+    Serial.println(millis());
     if (irrecv.decode(&results)) {
       irrecv.resume();
       Serial.println(results.value, HEX);
       if (results.value==0xFFFFFFFF) {
-        //Serial.println("                      majdnem   ismetles");
+        Serial.println("                      majdnem   ismetles");
         if (repeat_counter > 1 && lastIR != 0) {
           switch(lastIR) {
             case 0xFFC13E:
@@ -109,87 +111,87 @@ void loop() {
               break;
               
             case 0xFFE11E:
-              Serial.println(" EXTRA+");
+              Serial.println(" EXTRA+ in repeat");
               setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 140);
               break;
               
             case 0xFF619E:
-              Serial.println(" BLUE+");
+              Serial.println(" BLUE+ in repeat");
               setColourRgb(redCur,greenCur,blueCur+buttonStep,extraCur, true, 140);
               break;
               
             case 0xFFA15E:
-              Serial.println(" GREEN+");
+              Serial.println(" GREEN+ in repeat");
               setColourRgb(redCur,greenCur+buttonStep,blueCur,extraCur, true, 140);
               break;
               
             case 0xFF21DE:
-              Serial.println(" RED+");
+              Serial.println(" RED+ in repeat");
               setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 140);
               break;
               
             case 0xFFD12E:
-              Serial.println(" EXTRA-");
+              Serial.println(" EXTRA- in repeat");
               setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 140);
               break;
               
             case 0xFF51AE:
-              Serial.println(" BLUE-");
+              Serial.println(" BLUE- in repeat");
               setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 140);
               break;
               
             case 0xFF916E:
-              Serial.println(" GREEN-");
+              Serial.println(" GREEN- in repeat");
               setColourRgb(redCur,greenCur-buttonStep,blueCur,extraCur, true, 140);
               break;
               
             case 0xFF11EE:
-              Serial.println(" RED-");
+              Serial.println(" RED- in repeat");
               setColourRgb(redCur-buttonStep,greenCur,blueCur,extraCur, true, 140);
               break;
               
             case 0xFF31CE:
-              Serial.println(" MEM1");
+              Serial.println(" MEM1 save");
               EEPROM.write(3, redCur); EEPROM.write(4, greenCur); EEPROM.write(5, blueCur); EEPROM.write(6, extraCur);
               break;
               
             case 0xFFB14E:
-              Serial.println(" MEM2");
+              Serial.println(" MEM2 save");
               EEPROM.write(7, redCur); EEPROM.write(8, greenCur); EEPROM.write(9, blueCur); EEPROM.write(10, extraCur);
               break;
               
             case 0xFF718E:
-              Serial.println(" MEM3");
+              Serial.println(" MEM3 save");
               EEPROM.write(11, redCur); EEPROM.write(12, greenCur); EEPROM.write(13, blueCur); EEPROM.write(14, extraCur);
               break;
               
             case 0xFF09F6:
-              Serial.println(" MEM4");
+              Serial.println(" MEM4 save");
               EEPROM.write(15, redCur); EEPROM.write(16, greenCur); EEPROM.write(17, blueCur); EEPROM.write(18, extraCur);
               break;
               
             case 0xFF8976:
-              Serial.println(" MEM5");
+              Serial.println(" MEM5 save");
               EEPROM.write(19, redCur); EEPROM.write(20, greenCur); EEPROM.write(21, blueCur); EEPROM.write(22, extraCur);
               break;
               
             case 0xFF49B6:
-              Serial.println(" MEM6");
+              Serial.println(" MEM6 save");
               EEPROM.write(23, redCur); EEPROM.write(24, greenCur); EEPROM.write(25, blueCur); EEPROM.write(26, extraCur);
               break;
               
             case 0xFF29D6:
-              Serial.println(" MEM7");
+              Serial.println(" MEM7 save");
               EEPROM.write(27, redCur); EEPROM.write(28, greenCur); EEPROM.write(29, blueCur); EEPROM.write(30, extraCur);
               break;
               
             case 0xFFA956:
-              Serial.println(" MEM8");
+              Serial.println(" MEM8 save");
               EEPROM.write(31, redCur); EEPROM.write(32, greenCur); EEPROM.write(33, blueCur); EEPROM.write(34, extraCur);
               break;
               
             case 0xFF6996:
-              Serial.println(" MEM9");
+              Serial.println(" MEM9 save");
               EEPROM.write(35, redCur); EEPROM.write(36, greenCur); EEPROM.write(37, blueCur); EEPROM.write(38, extraCur);
               break;
           }
@@ -208,6 +210,7 @@ void loop() {
       }
     }
     else {
+      Serial.println("              IR not found");
       if (normalmode==true && lastIR != 0) {
         switch(lastIR) {
             case 0xFFC13E:
@@ -246,7 +249,7 @@ void loop() {
               break;
               
             case 0xFFE11E:
-              Serial.println(" WHITE");
+              Serial.println(" EXTRA+");
               setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 300);
               break;
               
