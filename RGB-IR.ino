@@ -100,7 +100,7 @@ void loop() {
             case 0xFF817E:
               Serial.println(" DOWN");
               if (colorWheel == true) {
-                colorWheelChangeTime = colorWheelChangeTime - 10 < 0 ? 0 : colorWheelChangeTime - 10 ;
+                colorWheelChangeTime = colorWheelChangeTime + 10 > 5000 ? 5000 : colorWheelChangeTime + 10 ;
               }
               else {
                 refBrightness=max(redRef,max(greenRef,blueRef));
@@ -113,8 +113,8 @@ void loop() {
               
             case 0xFF01FE:
               Serial.println(" UP");
-              if (colorWheel == true) {
-                colorWheelChangeTime = colorWheelChangeTime + 10 > 5000 ? 5000 : colorWheelChangeTime + 10 ;
+              if (colorWheel == true) {                
+                colorWheelChangeTime = colorWheelChangeTime - 10 < 0 ? 0 : colorWheelChangeTime - 10 ;
               }
               else {
                 refBrightness=max(redRef,max(greenRef,blueRef));
@@ -131,6 +131,9 @@ void loop() {
               Serial.println(" EXTRA+ in repeat");
               if (colorWheel == true) {
                 colorWheelExtraLight = colorWheelExtraLight + buttonStep > 255 ? 255 : colorWheelExtraLight + buttonStep ;
+                setColourRgb(redCur,greenCur,blueCur,colorWheelExtraLight, true, 140);                
+                autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
+                colorWheel = true; //siwtch back colorWheel because setColourRGB disables it 
               }
               else {
                 setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 140);
@@ -141,42 +144,75 @@ void loop() {
               Serial.println(" EXTRA- in repeat");
               if (colorWheel == true) {
                 colorWheelExtraLight = colorWheelExtraLight - buttonStep < 0 ? 0 : colorWheelExtraLight - buttonStep ;
+                setColourRgb(redCur,greenCur,blueCur,colorWheelExtraLight, true, 140);
+                autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
+                colorWheel = true; //siwtch back colorWheel because setColourRGB disables it 
               }
               else {
                 setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 140);
               }
               break;
-              
-            case 0xFF619E:
-              Serial.println(" BLUE+ in repeat");
-              setColourRgb(redCur,greenCur,blueCur+buttonStep,extraCur, true, 140);
-              break;
-              
-            case 0xFFA15E:
-              Serial.println(" GREEN+ in repeat");
-              setColourRgb(redCur,greenCur+buttonStep,blueCur,extraCur, true, 140);
-              break;
-              
+            
             case 0xFF21DE:
               Serial.println(" RED+ in repeat");
-              setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 140);
-              break;           
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 5 ;
+              }
+              else {
+                setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 140);
+              }
+              break;  
             
-            case 0xFF51AE:
-              Serial.println(" BLUE- in repeat");
-              setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 140);
+            case 0xFFA15E:
+              Serial.println(" GREEN+ in repeat");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 20 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur+buttonStep,blueCur,extraCur, true, 140);
+              }
               break;
-              
-            case 0xFF916E:
-              Serial.println(" GREEN- in repeat");
-              setColourRgb(redCur,greenCur-buttonStep,blueCur,extraCur, true, 140);
+            
+            case 0xFF619E:
+              Serial.println(" BLUE+ in repeat");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 50 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur+buttonStep,extraCur, true, 140);
+              }
               break;
               
             case 0xFF11EE:
               Serial.println(" RED- in repeat");
-              setColourRgb(redCur-buttonStep,greenCur,blueCur,extraCur, true, 140);
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 200 ;
+              }
+              else {
+                setColourRgb(redCur-buttonStep,greenCur,blueCur,extraCur, true, 140);
+              }
               break;
               
+            case 0xFF916E:
+              Serial.println(" GREEN- in repeat");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 1000 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur-buttonStep,blueCur,extraCur, true, 140);
+              }
+              break;       
+            
+            case 0xFF51AE:
+              Serial.println(" BLUE- in repeat");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 0 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 140);
+              }
+              break;
+            
             case 0xFF31CE:
               Serial.println(" MEM1 save");
               EEPROM.write(3, redCur); EEPROM.write(4, greenCur); EEPROM.write(5, blueCur); EEPROM.write(6, extraCur);
@@ -257,7 +293,7 @@ void loop() {
             case 0xFF817E:
               Serial.println(" DOWN");
               if (colorWheel == true) {
-                colorWheelChangeTime = colorWheelChangeTime - 5 < 0 ? 0 : colorWheelChangeTime - 5 ;
+                colorWheelChangeTime = colorWheelChangeTime + 1 > 5000 ? 5000 : colorWheelChangeTime + 1 ;
               }
               else {
                 refBrightness=max(redRef,max(greenRef,blueRef));
@@ -271,7 +307,7 @@ void loop() {
             case 0xFF01FE:
               Serial.println(" UP");
               if (colorWheel == true) {
-                colorWheelChangeTime = colorWheelChangeTime + 5 > 5000 ? 5000 : colorWheelChangeTime + 5 ;
+                colorWheelChangeTime = colorWheelChangeTime - 1 < 0 ? 0 : colorWheelChangeTime - 1 ;
               }
               else {
                 refBrightness=max(redRef,max(greenRef,blueRef));
@@ -288,6 +324,9 @@ void loop() {
               Serial.println(" EXTRA+");
               if (colorWheel == true) {
                 colorWheelExtraLight = colorWheelExtraLight + buttonStep > 255 ? 255 : colorWheelExtraLight + buttonStep ;
+                setColourRgb(redCur,greenCur,blueCur,colorWheelExtraLight, true, 140);                
+                autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
+                colorWheel = true; //siwtch back colorWheel because setColourRGB disables it                
               }
               else {
                 setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 300);
@@ -298,42 +337,75 @@ void loop() {
               Serial.println(" EXTRA-");
               if (colorWheel == true) {
                 colorWheelExtraLight = colorWheelExtraLight - buttonStep < 0 ? 0 : colorWheelExtraLight - buttonStep ;
+                setColourRgb(redCur,greenCur,blueCur,colorWheelExtraLight, true, 140);                
+                autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
+                colorWheel = true; //siwtch back colorWheel because setColourRGB disables it 
               }
               else {
                 setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 300);
               }
               break;
               
-            case 0xFF619E:
-              Serial.println(" BLUE+");
-              setColourRgb(redCur,greenCur,blueCur+buttonStep,extraCur, true, 300);
-              break;
-              
-            case 0xFFA15E:
-              Serial.println(" GREEN+");
-              setColourRgb(redCur,greenCur+buttonStep,blueCur,extraCur, true, 300);
-              break;
-              
             case 0xFF21DE:
               Serial.println(" RED+");
-              setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 300);
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 5 ;
+              }
+              else {
+                setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 300);
+              }
               break;
-             
-            case 0xFF51AE:
-              Serial.println(" BLUE-");
-              setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 300);
+            
+            case 0xFFA15E:
+              Serial.println(" GREEN+");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 20 ; 
+              }
+              else {
+                setColourRgb(redCur,greenCur+buttonStep,blueCur,extraCur, true, 300);
+              }
               break;
-              
-            case 0xFF916E:
-              Serial.println(" GREEN-");
-              setColourRgb(redCur,greenCur-buttonStep,blueCur,extraCur, true, 300);
+            
+            case 0xFF619E:
+              Serial.println(" BLUE+");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 50 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur+buttonStep,extraCur, true, 300);
+              }
               break;
               
             case 0xFF11EE:
               Serial.println(" RED-");
-              setColourRgb(redCur-buttonStep,greenCur,blueCur,extraCur, true, 300);
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 200 ;
+              }
+              else {
+                setColourRgb(redCur-buttonStep,greenCur,blueCur,extraCur, true, 300);
+              }
               break;
               
+            case 0xFF916E:
+              Serial.println(" GREEN-");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 1000 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur-buttonStep,blueCur,extraCur, true, 300);
+              }
+              break;
+             
+            case 0xFF51AE:
+              Serial.println(" BLUE-");
+              if (colorWheel == true) {                
+                colorWheelChangeTime = 5000 ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 300);
+              }
+              break;
+                            
             case 0xFF31CE:
               Serial.println(" MEM1");
               setColourRgb(EEPROM.read(3),EEPROM.read(4),EEPROM.read(5),EEPROM.read(6));
