@@ -1,5 +1,6 @@
 #include <IRremote.h>
 #include <EEPROM.h>
+#include <TrueRandom.h>
 //PIN connections:
 //RGB LED strip: red:D9, green:D10, blue:D6
 //IR Data: D7
@@ -7,12 +8,12 @@
 //PIR sensor data: D4
 //extra light PWM (bathroom mirror led or extractor hood light): D5
 
-byte RECV_PIN = 7;
-byte redPin = 9;
-byte greenPin = 10;
-byte bluePin = 6;
-byte pirPin = 4;
-byte extraPin = 5;
+#define IRRECVPIN 7
+#define redPin 9
+#define greenPin 10
+#define bluePin 6
+#define pirPin 4
+#define extraPin 5
 
 byte redCur = 0;
 byte greenCur = 0;
@@ -23,7 +24,7 @@ byte greenSave = 100;
 byte blueSave = 100;
 byte extraSave = 100;
 byte buttonStep = 7 ;
-byte redRef; //used for the ligth ammount change, like reference values of the original colors
+byte redRef; //used for the ligth ammount (brigthness) change, like reference values of the original colors
 byte greenRef;
 byte blueRef;
 byte extraRef;
@@ -36,14 +37,13 @@ boolean autoOff = false; //automated light switch off needed - this state means 
 #define autoSwitchoffTimer 120 //seconds
 unsigned long lastMovement_millis;
 
-IRrecv irrecv(RECV_PIN);
+IRrecv irrecv(IRRECVPIN);
 
 decode_results results;
 int lastIR;
-boolean normalmode; //for detecting the short/long presses
-boolean validIR;
-byte repeat_counter;
-#define IRDELAY 150 //means ms - wait between IR detection readouts
+boolean normalmode; //for detecting the short/long presses, normalmode means that after an IR code no (or not enough) repeat code (FFFFFFFF) arrived so the short press action for the IR code should be executed
+byte repeat_counter; //counting repeat codes (FFFFFFFF) after an IR code. One repeat code (FFFFFFFF) is not enough for repeat - it is easy to push the button that long
+#define IRDELAY 150 //in milliseconds - wait between IR detection readouts - under 150 the detection of the long presses is not stable
 unsigned long lastIRreadout_millis = 0;
 
 //color wheel stuff
@@ -65,7 +65,6 @@ void setup()
   Serial.begin(9600);
   irrecv.enableIRIn(); // Start the receiver
   normalmode = false;
-  validIR = false;
   repeat_counter = 0;
   pinMode(pirPin, INPUT);
 }
@@ -500,21 +499,22 @@ void loop() {
   
   //AUTOMATED CODE BASED ON PIR SENSOR and analogRead(0)
   if (autoCtrl == true) {
-    if (digitalRead(pirPin) == HIGH && (analogRead(0) < 250 || autoOff == true) && (millis() - lastMovement_millis) > 1500) {
+    if (digitalRead(pirPin) == HIGH && (analogRead(0) < 250 || autoOff == true) && (millis() - lastMovement_millis) > 1500) {//the 1,5 sec delay after turn off is because the turn off of the lights sometimes generates false IR trigger
       if (autoOff != true) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
-        Serial.println("AUTO turn on MEM1");
-        Serial.println(analogRead(0));
-        setColourRgb(EEPROM.read(3),EEPROM.read(4),EEPROM.read(5),EEPROM.read(6)); //automated mode uses the MEM1 settings
+        //Serial.println("AUTO turn on MEM1");
+        //Serial.println(analogRead(0));
+        byte randomMemToLoad = TrueRandom.random(1,4); //automated mode uses MEM1-3 settings randomly
+        setColourRgb(EEPROM.read(randomMemToLoad*4-1), EEPROM.read(randomMemToLoad*4), EEPROM.read(randomMemToLoad*4+1), EEPROM.read(randomMemToLoad*4+2));
         autoCtrl = true; //set the auto control back to true because setColourRGB disables it
         autoOff = true; //set the automated off mode true
       }
-      Serial.println("renew timer");
+      //Serial.println("renew timer");
       lastMovement_millis = millis(); //last movement's timestamp
     }
     if (autoOff == true && (millis() - lastMovement_millis) > ((unsigned long)autoSwitchoffTimer * 1000)) {
-      Serial.println("AUTO turn off lights");
+      //Serial.println("AUTO turn off lights");
       setColourRgb(0,0,0,0); //auto off mode is set by the setColourRgb(0,0,0,0)
-      lastMovement_millis = millis(); //last movement's timestamp
+      lastMovement_millis = millis(); //turnoff timestamp
     }
   }
 
