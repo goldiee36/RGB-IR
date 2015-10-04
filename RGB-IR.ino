@@ -33,8 +33,8 @@ float newBrightnessPercent;
 float extraNewBrightnessPercent;
 boolean autoCtrl = true; //automated light switch on and off (when dark enough, no manual control, and there is a movement)
 boolean autoOff = false; //automated light switch off needed - this state means that the light are on because of autoctrl switch on
-int autoSwitchoffTimer = 120; //seconds
-unsigned long prevMillis;
+#define autoSwitchoffTimer 120 //seconds
+unsigned long lastMovement_millis;
 
 IRrecv irrecv(RECV_PIN);
 
@@ -44,7 +44,6 @@ boolean normalmode; //for detecting the short/long presses
 boolean validIR;
 byte repeat_counter;
 #define IRDELAY 150 //means ms - wait between IR detection readouts
-byte needDelay = IRDELAY; //if we do a color transition which contains delay we have to decrease this value
 unsigned long lastIRreadout_millis = 0;
 
 //color wheel stuff
@@ -54,6 +53,9 @@ byte colorWheelG = 127;
 byte colorWheelB = 0;
 byte colorWheelWhichColorToDecrease = 0; //0 red, 1 green, 2 blue
 byte colorWheelNextColorToDecrease = 0;
+unsigned long lastColorWheelChange_millis;
+int colorWheelChangeTime = 200; //in milliseconds
+byte colorWheelExtraLight = 50;
 
 void setup()
 {
@@ -69,16 +71,15 @@ void setup()
 }
 
 void loop() {
-  if ((millis() - lastIRreadout_millis) > (unsigned long)needDelay) {//the IR detection needs time to evaulate the next button push. in case of long presses the oxFFFFFFFF repeat codes are coming around every 100ms each after an other
+  if ((millis() - lastIRreadout_millis) > IRDELAY) {//the IR detection needs time to evaulate the next button push. in case of long presses the oxFFFFFFFF repeat codes are coming around every 100ms each after an other
                                                                      //If we check the next IR detection too early we may miss the next repeat code
-    needDelay = IRDELAY;
     lastIRreadout_millis = millis();
     if (irrecv.decode(&results)) {
       irrecv.resume();
       Serial.println(results.value, HEX);
       if (results.value==0xFFFFFFFF) {
         Serial.println("                      almost repeat");
-        if (repeat_counter > 1 && lastIR != 0) {
+        if (repeat_counter > 1 && lastIR != 0) { //one repeat code (FFFFFFFF) is not enough for repeat - it is easy to push the button that long
           switch(lastIR) {
             case 0xFFC13E:
               Serial.println(" ON REP");
@@ -98,27 +99,52 @@ void loop() {
               
             case 0xFF817E:
               Serial.println(" DOWN");
-              refBrightness=max(redRef,max(greenRef,blueRef));
-              curBrightness=max(redCur,max(greenCur,blueCur));
-              newBrightnessPercent=(curBrightness - 0.03 * 255) / refBrightness; //0.03 means 3% step in brigthness
-              extraNewBrightnessPercent=(extraCur - 0.03 * 255) / extraRef;
-              setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 140);
+              if (colorWheel == true) {
+                colorWheelChangeTime = colorWheelChangeTime - 10 < 0 ? 0 : colorWheelChangeTime - 10 ;
+              }
+              else {
+                refBrightness=max(redRef,max(greenRef,blueRef));
+                curBrightness=max(redCur,max(greenCur,blueCur));
+                newBrightnessPercent=(curBrightness - 0.05 * 255) / refBrightness; //0.05 means 5% step in brigthness
+                extraNewBrightnessPercent=(extraCur - 0.05 * 255) / extraRef;
+                setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 140);
+              }
               break;
               
             case 0xFF01FE:
               Serial.println(" UP");
-              refBrightness=max(redRef,max(greenRef,blueRef));
-              curBrightness=max(redCur,max(greenCur,blueCur));
-              newBrightnessPercent=(curBrightness + 0.03 * 255) / refBrightness;
-              extraNewBrightnessPercent=(extraCur + 0.03 * 255) / extraRef;
-              if (redRef*newBrightnessPercent <= 255 && greenRef*newBrightnessPercent <= 255 && blueRef*newBrightnessPercent <= 255) {
-                setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 140);
+              if (colorWheel == true) {
+                colorWheelChangeTime = colorWheelChangeTime + 10 > 5000 ? 5000 : colorWheelChangeTime + 10 ;
+              }
+              else {
+                refBrightness=max(redRef,max(greenRef,blueRef));
+                curBrightness=max(redCur,max(greenCur,blueCur));
+                newBrightnessPercent=(curBrightness + 0.05 * 255) / refBrightness;
+                extraNewBrightnessPercent=(extraCur + 0.05 * 255) / extraRef;
+                if (redRef*newBrightnessPercent <= 255 && greenRef*newBrightnessPercent <= 255 && blueRef*newBrightnessPercent <= 255) {
+                  setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 140);
+                }
               }
               break;
               
             case 0xFFE11E:
               Serial.println(" EXTRA+ in repeat");
-              setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 140);
+              if (colorWheel == true) {
+                colorWheelExtraLight = colorWheelExtraLight + buttonStep > 255 ? 255 : colorWheelExtraLight + buttonStep ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 140);
+              }
+              break;
+            
+            case 0xFFD12E:
+              Serial.println(" EXTRA- in repeat");
+              if (colorWheel == true) {
+                colorWheelExtraLight = colorWheelExtraLight - buttonStep < 0 ? 0 : colorWheelExtraLight - buttonStep ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 140);
+              }
               break;
               
             case 0xFF619E:
@@ -134,13 +160,8 @@ void loop() {
             case 0xFF21DE:
               Serial.println(" RED+ in repeat");
               setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 140);
-              break;
-              
-            case 0xFFD12E:
-              Serial.println(" EXTRA- in repeat");
-              setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 140);
-              break;
-              
+              break;           
+            
             case 0xFF51AE:
               Serial.println(" BLUE- in repeat");
               setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 140);
@@ -200,7 +221,7 @@ void loop() {
               Serial.println(" MEM9 save");
               EEPROM.write(35, redCur); EEPROM.write(36, greenCur); EEPROM.write(37, blueCur); EEPROM.write(38, extraCur);
               break;
-          }
+          }          
           //Serial.print(lastIR, HEX);
           //Serial.println(" - ISMETLES");
           normalmode = false;
@@ -235,27 +256,52 @@ void loop() {
               
             case 0xFF817E:
               Serial.println(" DOWN");
-              refBrightness=max(redRef,max(greenRef,blueRef));
-              curBrightness=max(redCur,max(greenCur,blueCur));
-              newBrightnessPercent=(curBrightness - 0.03 * 255) / refBrightness;
-              extraNewBrightnessPercent=(extraCur - 0.03 * 255) / extraRef;
-              setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 300);
+              if (colorWheel == true) {
+                colorWheelChangeTime = colorWheelChangeTime - 5 < 0 ? 0 : colorWheelChangeTime - 5 ;
+              }
+              else {
+                refBrightness=max(redRef,max(greenRef,blueRef));
+                curBrightness=max(redCur,max(greenCur,blueCur));
+                newBrightnessPercent=(curBrightness - 0.03 * 255) / refBrightness;
+                extraNewBrightnessPercent=(extraCur - 0.03 * 255) / extraRef;
+                setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 300);
+              }
               break;
               
             case 0xFF01FE:
               Serial.println(" UP");
-              refBrightness=max(redRef,max(greenRef,blueRef));
-              curBrightness=max(redCur,max(greenCur,blueCur));
-              newBrightnessPercent=(curBrightness + 0.03 * 255) / refBrightness;
-              extraNewBrightnessPercent=(extraCur + 0.03 * 255) / extraRef;
-              if (redRef*newBrightnessPercent <= 255 && greenRef*newBrightnessPercent <= 255 && blueRef*newBrightnessPercent <= 255) {
-                setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 300);
+              if (colorWheel == true) {
+                colorWheelChangeTime = colorWheelChangeTime + 5 > 5000 ? 5000 : colorWheelChangeTime + 5 ;
+              }
+              else {
+                refBrightness=max(redRef,max(greenRef,blueRef));
+                curBrightness=max(redCur,max(greenCur,blueCur));
+                newBrightnessPercent=(curBrightness + 0.03 * 255) / refBrightness;
+                extraNewBrightnessPercent=(extraCur + 0.03 * 255) / extraRef;
+                if (redRef*newBrightnessPercent <= 255 && greenRef*newBrightnessPercent <= 255 && blueRef*newBrightnessPercent <= 255) {
+                  setColourRgb(redRef*newBrightnessPercent+0.5, greenRef*newBrightnessPercent+0.5, blueRef*newBrightnessPercent+0.5, extraRef*extraNewBrightnessPercent+0.5, false, 300);
+                }
               }
               break;
               
             case 0xFFE11E:
               Serial.println(" EXTRA+");
-              setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 300);
+              if (colorWheel == true) {
+                colorWheelExtraLight = colorWheelExtraLight + buttonStep > 255 ? 255 : colorWheelExtraLight + buttonStep ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur,extraCur+buttonStep, true, 300);
+              }
+              break;
+            
+            case 0xFFD12E:
+              Serial.println(" EXTRA-");
+              if (colorWheel == true) {
+                colorWheelExtraLight = colorWheelExtraLight - buttonStep < 0 ? 0 : colorWheelExtraLight - buttonStep ;
+              }
+              else {
+                setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 300);
+              }
               break;
               
             case 0xFF619E:
@@ -272,12 +318,7 @@ void loop() {
               Serial.println(" RED+");
               setColourRgb(redCur+buttonStep,greenCur,blueCur,extraCur, true, 300);
               break;
-              
-            case 0xFFD12E:
-              Serial.println(" EXTRA-");
-              setColourRgb(redCur,greenCur,blueCur,extraCur-buttonStep, true, 300);
-              break;
-              
+             
             case 0xFF51AE:
               Serial.println(" BLUE-");
               setColourRgb(redCur,greenCur,blueCur-buttonStep,extraCur, true, 300);
@@ -340,9 +381,9 @@ void loop() {
               
             case 0xFF6996:
               Serial.println(" prog1 - color wheel");
-              setColourRgb(colorWheelR,colorWheelG,colorWheelB,50, false, 1000);
+              setColourRgb(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight, false, 1000);
               autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
-              colorWheel = true;
+              colorWheel = true; //siwtch back colorWheel because setColourRGB disables it
               break;
           }
         //Serial.print(lastIR, HEX);
@@ -353,8 +394,9 @@ void loop() {
       lastIR=0;
     }
   }
-  
-  if (colorWheel == true) { //COLOR WHEEL state code    
+
+
+  if (colorWheel == true && (millis() - lastColorWheelChange_millis) > (unsigned long)colorWheelChangeTime) { //COLOR WHEEL state code    
     switch(colorWheelWhichColorToDecrease) {
         case 0:
           colorWheelR--;
@@ -379,30 +421,33 @@ void loop() {
         break;
     }
     colorWheelWhichColorToDecrease = colorWheelNextColorToDecrease;
-    setColourRgbFastSimple(colorWheelR,colorWheelG,colorWheelB,50);
-    delay(50);
+    setColourRgbFastSimple(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight);
+    lastColorWheelChange_millis = millis();
   }
   
-  //AUTOMATED CODE BASED ON PIR SENSOR analogRead(0)
-  if (autoCtrl == true) { 
-    if (digitalRead(pirPin) == HIGH && (analogRead(0) < 250 || autoOff == true) && (millis() - prevMillis) > 1500) {
-      if (autoOff == false) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
+  
+  //AUTOMATED CODE BASED ON PIR SENSOR and analogRead(0)
+  if (autoCtrl == true) {
+    if (digitalRead(pirPin) == HIGH && (analogRead(0) < 250 || autoOff == true) && (millis() - lastMovement_millis) > 1500) {
+      if (autoOff != true) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
         Serial.println("AUTO turn on MEM1");
         Serial.println(analogRead(0));
         setColourRgb(EEPROM.read(3),EEPROM.read(4),EEPROM.read(5),EEPROM.read(6)); //automated mode uses the MEM1 settings
-        autoCtrl = true; //set the automated mode back to true because setColourRgb swiches off by default
-        autoOff = true; //set the automated off mode back to true because setColourRgb swiches off by default
+        autoCtrl = true; //set the auto control back to true because setColourRGB disables it
+        autoOff = true; //set the automated off mode true
       }
       Serial.println("renew timer");
-      prevMillis = millis(); //last movement's timestamp
+      lastMovement_millis = millis(); //last movement's timestamp
     }
-    if (autoOff == true && (millis() - prevMillis) > ((unsigned long)autoSwitchoffTimer * 1000)) { // < 0 overflow detection, in case of OF it turns off also
+    if (autoOff == true && (millis() - lastMovement_millis) > ((unsigned long)autoSwitchoffTimer * 1000)) {
       Serial.println("AUTO turn off lights");
-      setColourRgb(0,0,0,0); //auto off mode is set by the setColourRgb(0,0,0)
-      prevMillis = millis(); //last movement's timestamp
+      setColourRgb(0,0,0,0); //auto off mode is set by the setColourRgb(0,0,0,0)
+      lastMovement_millis = millis(); //last movement's timestamp
     }
   }
-}
+
+
+} //end of main LOOP
 
 
 void setColourRgb(int redSet1, int greenSet1, int blueSet1, int extraSet1) {
@@ -439,14 +484,9 @@ void setColourRgb(int redSet, int greenSet, int blueSet, int extraSet, boolean c
     blueRef = blueSet;
     extraRef = extraSet;
   }
-  if (redSet == 0 && greenSet == 0 && blueSet == 0 && extraSet == 0) {//AUTO mode ON if all colors are 0 (like OFF button, or just manual zero light)
-    autoCtrl = true;
-    autoOff = false;
-  }
-  else {
-    autoCtrl = false;
-    autoOff = false;
-  }
+  //disable all automated/other states, except the AUTO light control will be ON if all colors are 0 (like OFF button, or just manual zero light)
+  autoCtrl = redSet == 0 && greenSet == 0 && blueSet == 0 && extraSet == 0 ? true : false ;
+  autoOff = false;
   colorWheel = false;
 } 
 
