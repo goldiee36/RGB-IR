@@ -8,12 +8,16 @@
 //PIR sensor data: D4
 //extra light PWM (bathroom mirror led or extractor hood light): D5
 
+byte type = 1; //0 = bathroom, kitchen, 1 = bedroom
+#define autoSwitchoffTimer 120 //seconds
+
 #define IRRECVPIN 7
 #define redPin 9
 #define greenPin 10
 #define bluePin 6
 #define pirPin 4
 #define extraPin 5
+#define lightSensorPin A0
 
 byte redCur = 0;
 byte greenCur = 0;
@@ -34,7 +38,6 @@ float newBrightnessPercent;
 float extraNewBrightnessPercent;
 boolean autoCtrl = true; //automated light switch on and off (when dark enough, no manual control, and there is a movement)
 boolean autoOff = false; //automated light switch off needed - this state means that the light are on because of autoctrl switch on
-#define autoSwitchoffTimer 120 //seconds
 unsigned long lastMovement_millis;
 
 IRrecv irrecv(IRRECVPIN);
@@ -59,6 +62,12 @@ byte colorWheelExtraLight = 50;
 
 void setup()
 {
+  if (type == 0) {
+    pinMode(lightSensorPin, INPUT);
+  }
+  else { //like type == 1
+    pinMode(lightSensorPin, INPUT_PULLUP);
+  }
   pinMode(redPin, OUTPUT); pinMode(greenPin, OUTPUT);
   pinMode(bluePin, OUTPUT); pinMode(extraPin, OUTPUT);
   setColourRgb(0,0,0,0);
@@ -497,25 +506,49 @@ void loop() {
   }
   
   
-  //AUTOMATED CODE BASED ON PIR SENSOR and analogRead(0)
+  //AUTOMATED CODE
   if (autoCtrl == true) {
-    if (digitalRead(pirPin) == HIGH && (analogRead(0) < 250 || autoOff == true) && (millis() - lastMovement_millis) > 1500) {//the 1,5 sec delay after turn off is because the turn off of the lights sometimes generates false IR trigger
-      if (autoOff != true) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
-        //Serial.println("AUTO turn on MEM1");
-        //Serial.println(analogRead(0));
-        byte randomMemToLoad = TrueRandom.random(1,4); //automated mode uses MEM1-3 settings randomly
-        setColourRgb(EEPROM.read(randomMemToLoad*4-1), EEPROM.read(randomMemToLoad*4), EEPROM.read(randomMemToLoad*4+1), EEPROM.read(randomMemToLoad*4+2));
-        autoCtrl = true; //set the auto control back to true because setColourRGB disables it
-        autoOff = true; //set the automated off mode true
+    // BASED ON PIR SENSOR and analogRead(lightSensorPin)
+    if (type == 0) {
+      if (digitalRead(pirPin) == HIGH && (analogRead(lightSensorPin) < 250 || autoOff == true) && (millis() - lastMovement_millis) > 1500) {//the 1,5 sec delay after turn off is because the turn off of the lights sometimes generates false IR trigger
+        if (autoOff != true) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
+          //Serial.println("AUTO turn on MEM1");
+          //Serial.println(analogRead(lightSensorPin));
+          byte randomMemToLoad = TrueRandom.random(1,4); //automated mode uses MEM1-3 settings randomly
+          setColourRgb(EEPROM.read(randomMemToLoad*4-1), EEPROM.read(randomMemToLoad*4), EEPROM.read(randomMemToLoad*4+1), EEPROM.read(randomMemToLoad*4+2));
+          autoCtrl = true; //set the auto control back to true because setColourRGB disables it
+          autoOff = true; //set the automated off mode true
+        }
+        //Serial.println("renew timer");
+        lastMovement_millis = millis(); //last movement's timestamp
       }
-      //Serial.println("renew timer");
-      lastMovement_millis = millis(); //last movement's timestamp
+      if (autoOff == true && (millis() - lastMovement_millis) > ((unsigned long)autoSwitchoffTimer * 1000)) {
+        //Serial.println("AUTO turn off lights");
+        setColourRgb(0,0,0,0); //autoctrl set to true and autoOff is set to false by the setColourRgb(0,0,0,0)
+        lastMovement_millis = millis(); //turnoff timestamp
+      }
     }
-    if (autoOff == true && (millis() - lastMovement_millis) > ((unsigned long)autoSwitchoffTimer * 1000)) {
-      //Serial.println("AUTO turn off lights");
-      setColourRgb(0,0,0,0); //auto off mode is set by the setColourRgb(0,0,0,0)
-      lastMovement_millis = millis(); //turnoff timestamp
+    //AUTOMATED MODE BASED ON analogRead(lightSensorPin) only - light on should not push light above threshold
+    else { // eg.: type = 1
+      if (analogRead(lightSensorPin) > 400) {//light threshold level
+        if (autoOff != true) { //we dont need to set the MEM1 color again, it would take one sec so the normal IR detection would be sluggish if movement is detected
+          setColourRgb(EEPROM.read(3), EEPROM.read(4), EEPROM.read(5), EEPROM.read(6));
+          autoCtrl = true; //set the auto control back to true because setColourRGB disables it
+          autoOff = true; //set the automated off mode true
+        }
+        //Serial.println("renew timer");
+        lastMovement_millis = millis(); //last movement's timestamp
+      }
+      if (autoOff == true && (millis() - lastMovement_millis) > ((unsigned long)autoSwitchoffTimer * 1000)) {
+        setColourRgb(0,0,0,0); //autoctrl set to true and autoOff is set to false by the setColourRgb(0,0,0,0)
+        lastMovement_millis = millis(); //turnoff timestamp
+      }
     }
+  }
+
+  
+  if (type == 1 && autoCtrl == true) {
+    
   }
 
 
