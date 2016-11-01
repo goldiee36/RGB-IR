@@ -49,10 +49,14 @@ byte repeat_counter; //counting repeat codes (FFFFFFFF) after an IR code. One re
 #define IRDELAY 150 //in milliseconds - wait between IR detection readouts - under 150 the detection of the long presses is not stable
 unsigned long lastIRreadout_millis = 0;
 
+
+//jackOLantern stuff
+boolean jackOLantern = false;
+unsigned long lastJackOLanternChange_millis = millis();
+
 //lowRandom stuff
 boolean lowRandom = false;
 unsigned long lastLowRandomChange_millis = millis();
-int lowRandomChangeTime = 200; //in milliseconds
 
 //color wheel stuff
 boolean colorWheel = false; //activate color wheel which power offs after 20 minutes// todo power off
@@ -112,7 +116,7 @@ void loop() {
               
             case 0xFF817E:
               Serial.println(" DOWN");
-              if (colorWheel == true || lowRandom == true) {
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {
                 colorWheelChangeTime = colorWheelChangeTime + 10 > 5000 ? 5000 : colorWheelChangeTime + 10 ;
               } 
               else {
@@ -126,7 +130,7 @@ void loop() {
               
             case 0xFF01FE:
               Serial.println(" UP");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = colorWheelChangeTime - 10 < 0 ? 0 : colorWheelChangeTime - 10 ;
               }
               else {
@@ -168,7 +172,7 @@ void loop() {
             
             case 0xFF21DE:
               Serial.println(" RED+ in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 5 ;
               }
               else {
@@ -178,7 +182,7 @@ void loop() {
             
             case 0xFFA15E:
               Serial.println(" GREEN+ in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 20 ;
               }
               else {
@@ -188,7 +192,7 @@ void loop() {
             
             case 0xFF619E:
               Serial.println(" BLUE+ in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 50 ;
               }
               else {
@@ -198,7 +202,7 @@ void loop() {
               
             case 0xFF11EE:
               Serial.println(" RED- in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 200 ;
               }
               else {
@@ -208,7 +212,7 @@ void loop() {
               
             case 0xFF916E:
               Serial.println(" GREEN- in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 1000 ;
               }
               else {
@@ -218,7 +222,7 @@ void loop() {
             
             case 0xFF51AE:
               Serial.println(" BLUE- in repeat");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 0 ;
               }
               else {
@@ -305,7 +309,7 @@ void loop() {
               
             case 0xFF817E:
               Serial.println(" DOWN");
-              if (colorWheel == true || lowRandom == true) {
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {
                 colorWheelChangeTime = colorWheelChangeTime + 1 > 5000 ? 5000 : colorWheelChangeTime + 1 ;
               }
               else {
@@ -319,7 +323,7 @@ void loop() {
               
             case 0xFF01FE:
               Serial.println(" UP");
-              if (colorWheel == true || lowRandom == true) {
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {
                 colorWheelChangeTime = colorWheelChangeTime - 1 < 0 ? 0 : colorWheelChangeTime - 1 ;
               }
               else {
@@ -361,7 +365,7 @@ void loop() {
               
             case 0xFF21DE:
               Serial.println(" RED+");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 5 ;
               }
               else {
@@ -371,7 +375,7 @@ void loop() {
             
             case 0xFFA15E:
               Serial.println(" GREEN+");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 20 ; 
               }
               else {
@@ -381,7 +385,7 @@ void loop() {
             
             case 0xFF619E:
               Serial.println(" BLUE+");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 50 ;
               }
               else {
@@ -391,7 +395,7 @@ void loop() {
               
             case 0xFF11EE:
               Serial.println(" RED-");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 200 ;
               }
               else {
@@ -401,7 +405,7 @@ void loop() {
               
             case 0xFF916E:
               Serial.println(" GREEN-");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 1000 ;
               }
               else {
@@ -411,7 +415,7 @@ void loop() {
              
             case 0xFF51AE:
               Serial.println(" BLUE-");
-              if (colorWheel == true || lowRandom == true) {                
+              if (colorWheel == true || lowRandom == true || jackOLantern == true) {                
                 colorWheelChangeTime = 5000 ;
               }
               else {
@@ -449,10 +453,10 @@ void loop() {
               setColourRgb(EEPROM.read(23),EEPROM.read(24),EEPROM.read(25),EEPROM.read(26));
               break;
               
-            case 0xFF29D6:
+            /*case 0xFF29D6:
               Serial.println(" MEM7");
               setColourRgb(EEPROM.read(27),EEPROM.read(28),EEPROM.read(29),EEPROM.read(30));
-              break;
+              break;*/
               
             /*case 0xFFA956:
               Serial.println(" MEM8");
@@ -464,16 +468,23 @@ void loop() {
             //  setColourRgb(EEPROM.read(35),EEPROM.read(36),EEPROM.read(37),EEPROM.read(38));
             //  break;
 
+            case 0xFF29D6:
+              Serial.println(" prog2 - lowRandom");
+              setColourRgb(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight, false, 1); //to disable all other spec program
+              autoCtrl = false;
+              jackOLantern = true;
+              break;
+
             case 0xFFA956:
               Serial.println(" prog2 - lowRandom");
-              setColourRgbFastSimple(0, 0, 0, 0);
+              setColourRgb(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight, false, 1); //to disable all other spec program
               autoCtrl = false;
               lowRandom = true;
               break;
               
             case 0xFF6996:
               Serial.println(" prog1 - color wheel");
-              setColourRgb(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight, false, 1000);
+              setColourRgb(colorWheelR, colorWheelG, colorWheelB, colorWheelExtraLight, false, 1000); //to disable all other spec program
               autoCtrl = false; //in theroy this is unnesecearry because colorwheel never issue full zero color
               colorWheel = true; //siwtch back colorWheel because setColourRGB disables it
               break;
@@ -487,9 +498,15 @@ void loop() {
     }
   }
 
+  //jack-o-lantern code    
+  if (jackOLantern == true && (millis() - lastJackOLanternChange_millis) > (unsigned long)colorWheelChangeTime) {
+    setColourRgbFastSimple(redCur + TrueRandom.random(-2, 3), greenCur + TrueRandom.random(-2, 3), blueCur + TrueRandom.random(-2, 3), 0,  0, 0, 0, 0, 80, 80, 40, 0);
+    lastJackOLanternChange_millis = millis();
+  }
+
   //low random code    
   if (lowRandom == true && (millis() - lastLowRandomChange_millis) > (unsigned long)colorWheelChangeTime) {
-    setColourRgbFastSimple(redCur + TrueRandom.random(-18, 21), greenCur + TrueRandom.random(-18, 21), blueCur + TrueRandom.random(-18, 21), 0, 0, 80);
+    setColourRgbFastSimple(redCur + TrueRandom.random(-18, 21), greenCur + TrueRandom.random(-18, 21), blueCur + TrueRandom.random(-18, 21), 0,  0, 0, 0, 0, 80, 80, 80, 0);
     lastLowRandomChange_millis = millis();
   }
 
@@ -612,21 +629,22 @@ void setColourRgb(int redSet, int greenSet, int blueSet, int extraSet, boolean c
   autoOff = false;
   colorWheel = false;
   lowRandom = false;
+  jackOLantern = false;
 } 
 
 void setColourRgbFastSimple(int redSet, int greenSet, int blueSet, int extraSet) {
-  setColourRgbFastSimple(redSet, greenSet, blueSet, extraSet, 0, 255);
+  setColourRgbFastSimple(redSet, greenSet, blueSet, extraSet, 0, 0, 0, 0, 255, 255, 255, 255);
 }
 
-void setColourRgbFastSimple(int redSet, int greenSet, int blueSet, int extraSet, byte minlimit, byte maxlimit) {
-  if (redSet < minlimit) { redSet = minlimit; }
-  if (greenSet < minlimit) { greenSet = minlimit; }
-  if (blueSet < minlimit) { blueSet = minlimit; }
-  if (extraSet < minlimit) { extraSet = minlimit; }
-  if (redSet > maxlimit) { redSet = maxlimit; }
-  if (greenSet > maxlimit) { greenSet = maxlimit; }
-  if (blueSet > maxlimit) { blueSet = maxlimit; }
-  if (extraSet > maxlimit) { extraSet = maxlimit; }
+void setColourRgbFastSimple(int redSet, int greenSet, int blueSet, int extraSet, byte minlimitR, byte minlimitG, byte minlimitB, byte minlimitE, byte maxlimitR, byte maxlimitG, byte maxlimitB, byte maxlimitE) {
+  if (redSet < minlimitR) { redSet = minlimitR; }
+  if (greenSet < minlimitG) { greenSet = minlimitG; }
+  if (blueSet < minlimitB) { blueSet = minlimitB; }
+  if (extraSet < minlimitE) { extraSet = minlimitE; }
+  if (redSet > maxlimitR) { redSet = maxlimitR; }
+  if (greenSet > maxlimitG) { greenSet = maxlimitG; }
+  if (blueSet > maxlimitB) { blueSet = maxlimitB; }
+  if (extraSet > maxlimitE) { extraSet = maxlimitE; }
   analogWrite(redPin, redSet);
   analogWrite(greenPin, greenSet);
   analogWrite(bluePin, blueSet);
